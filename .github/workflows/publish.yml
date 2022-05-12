@@ -1,0 +1,26 @@
+name: 'publish to github pages'
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  publish:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'write'
+    steps:
+      - uses: 'actions/checkout@v3'
+      - run: 'git config user.email "$(git log --pretty=format:%ce)"'
+      - run: 'git config user.name "$(git log --pretty=format:%cn)"'
+      - run: 'git subtree add --prefix dist origin gh-pages'
+        continue-on-error: true
+      - uses: 'pnpm/action-setup@v2'
+        with:
+          version: 'latest'
+      - run: 'pnpm install'
+      - run: 'pnpm run build'
+      - run: 'git add -f dist'
+      - run: 'git commit -m "publish: $GITHUB_SHA"'
+      - run: 'git subtree push --prefix dist origin gh-pages'
