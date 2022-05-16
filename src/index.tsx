@@ -1,5 +1,5 @@
 /* @refresh reload */
-import "./index.css";
+import { SimpleFilter, type Filter } from './subset';
 import datasets from "./datasets.json";
 
 import { render } from "solid-js/web";
@@ -23,7 +23,7 @@ import palette from "google-palette";
 render(() => {
 
     let chart = null;
-    let geneSet = null;
+    let filter: Filter = new SimpleFilter();
     let config : ChartConfiguration  = {
         type: "scatter",
         data: null,
@@ -40,16 +40,7 @@ render(() => {
     const [getGeneData] = createResource(getSendGene, async gene => await fetch(`${untrack(getDataSetName)}/gene/${gene}.json`).then(r => r.json()));
 
     createEffect(on(getGeneData, geneData => {
-        // TODO: refactor geneSet init
-        // since elements in geneData array are already sorted,
-        // binary search can find matching element index faster
-        // than just going through all elements one after the other
-        geneSet = new Set()
-        for (const i in geneData) {
-            if (geneData[i][1] > getCutoff()) {
-                geneSet.add(geneData[i][0]);
-            }
-        }
+        filter.newData(geneData, getCutoff());
         chart.update();
     }, { defer : true }));
 
@@ -76,11 +67,11 @@ render(() => {
                 point: {
                     radius: 1.2,
                     backgroundColor: ctx => {
-                        if (geneSet !== null) {
+                        if (filter.isOn()) {
                             if (untrack(getCmpModeG)) {
-                                return `${colours[ctx.datasetIndex]}, ${geneSet.has(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 1 : 0})`;
+                                return `${colours[ctx.datasetIndex]}, ${filter.check(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 1 : 0})`;
                             } else {
-                                return `${colours[ctx.datasetIndex]}, ${geneSet.has(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 0 : 1})`;
+                                return `${colours[ctx.datasetIndex]}, ${filter.check(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 0 : 1})`;
                             }
                         }
                         return `${colours[ctx.datasetIndex]}, 1)`
@@ -145,7 +136,7 @@ render(() => {
             <p><button onClick={() => setSendGene(getDispGene())}>subset</button></p>
         </Show>
         <p><button onClick={() => {
-            geneSet = null
+            filter.reset();
             setDispGene(null)
             setCutoff(null)
             chart.update();
