@@ -22,5 +22,5 @@ jobs:
       - run: 'pnpm install'
       - run: 'pnpm run build'
       - run: 'git add -f dist'
-      - run: 'git commit -m "publish: $GITHUB_SHA"'
-      - run: 'git subtree push --prefix dist origin gh-pages'
+      - run: 'git commit -m "publish: $GITHUB_SHA" && git subtree push --prefix dist origin gh-pages'
+        continue-on-error: true
