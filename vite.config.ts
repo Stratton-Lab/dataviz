@@ -1,11 +1,14 @@
-import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
+import { defineConfig } from "vite";
+import solidPlugin from "vite-plugin-solid";
 
 export default defineConfig({
-  base: "/dataviz/",
-  plugins: [solidPlugin()],
-  build: {
-    target: 'esnext',
-    polyfillDynamicImport: false,
-  },
+    define: {
+        "import.meta.vitest": "undefined",
+    },
+    base: "/dataviz/",
+    plugins: [solidPlugin()],
+    build: {
+        target: 'esnext',
+        polyfillDynamicImport: false,
+    },
 });

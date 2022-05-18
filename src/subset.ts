@@ -1,37 +1,29 @@
-// TODO: stabilize Filter API
-// move to Filter Generator api ?
 export interface Filter {
-    isOn(): boolean,
-    reset(): void,
-    newData(geneData: [string, number][], cutoff: number): void,
-    check(barcode: string): boolean
+    (barcode: string): boolean
 };
 
-export class SimpleFilter implements Filter {
-    geneSet: Set<string>;
-    constructor() {
-        this.geneSet = null;
+export const mkBinarySearchFilter = (geneData: [string, number][], cutoff: number): Filter => {
+    const maxIdx = geneData.length - 1;
+    if (geneData[maxIdx][1] <= cutoff) {
+        return _ => false;
     }
-    newData(geneData: [string, number][], cutoff: number) {
-        // TODO: refactor geneSet init
-        // since elements in geneData array are already sorted,
-        // binary search can find matching element index faster
-        // than just going through all elements one after the other
-        this.geneSet = new Set();
-        for (const i in geneData) {
-            if (geneData[i][1] > cutoff) {
-                this.geneSet.add(geneData[i][0]);
-            }
+    let left = 0;
+    let right = maxIdx;
+    let startIdx = null;
+
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        if (geneData[mid][1] > cutoff) {
+            startIdx = mid;
+            right = mid - 1;
+        } else {
+            left = mid + 1;
         }
     }
-    check(barcode: string) {
-        return this.geneSet.has(barcode);
-    }
-    reset() {
-        this.geneSet = null;
-    }
-    isOn(): boolean {
-        return this.geneSet !== null;
-    }
 
+    const geneSet = new Set();
+    for (let i = startIdx; i < maxIdx; i += 1) {
+        geneSet.add(geneData[i][0]);
+    }
+    return barcode => geneSet.has(barcode);
 }

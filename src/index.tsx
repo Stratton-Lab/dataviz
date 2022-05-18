@@ -1,5 +1,5 @@
 /* @refresh reload */
-import { SimpleFilter, type Filter } from './subset';
+import { mkBinarySearchFilter, type Filter } from './subset';
 import datasets from "./datasets.json";
 
 import { render } from "solid-js/web";
@@ -23,7 +23,7 @@ import palette from "google-palette";
 render(() => {
 
     let chart = null;
-    let filter: Filter = new SimpleFilter();
+    let filter: Filter = null;
     let config : ChartConfiguration  = {
         type: "scatter",
         data: null,
@@ -36,11 +36,11 @@ render(() => {
     const [getCutoff, setCutoff] = createSignal(null);
     const [getCmpModeG, setCmpModeG] = createSignal(true);
 
-    const [getCellData] = createResource(getDataSetName, async dataset => await fetch(`${dataset}/cells.json`).then(r => r.json()));
-    const [getGeneData] = createResource(getSendGene, async gene => await fetch(`${untrack(getDataSetName)}/gene/${gene}.json`).then(r => r.json()));
+    const [getCellData] = createResource(getDataSetName, async dataset => await fetch(`data/${dataset}/cells.json`).then(r => r.json()));
+    const [getGeneData] = createResource(getSendGene, async gene => await fetch(`data/${untrack(getDataSetName)}/gene/${gene}.json`).then(r => r.json()));
 
     createEffect(on(getGeneData, geneData => {
-        filter.newData(geneData, getCutoff());
+        filter = mkBinarySearchFilter(geneData, getCutoff());
         chart.update();
     }, { defer : true }));
 
@@ -52,9 +52,9 @@ render(() => {
                 datasets: Array.from(Object.keys(cellData.cells), category => {
                     let labels = [];
                     let data = [];
-                    cellData.cells[category].forEach(e => {
-                        labels.push(e[0]);
-                        data.push({x: e[3], y: e[4]})
+                    cellData.cells[category].forEach(([barcode, umap_1, umap_2]) => {
+                        labels.push(barcode);
+                        data.push({ x : umap_1, y : umap_2 })
                     });
                     return {
                         data: data,
@@ -67,14 +67,14 @@ render(() => {
                 point: {
                     radius: 1.2,
                     backgroundColor: ctx => {
-                        if (filter.isOn()) {
-                            if (untrack(getCmpModeG)) {
-                                return `${colours[ctx.datasetIndex]}, ${filter.check(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 1 : 0})`;
-                            } else {
-                                return `${colours[ctx.datasetIndex]}, ${filter.check(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 0 : 1})`;
-                            }
+                        if (filter === null) {
+                            return `${colours[ctx.datasetIndex]}, 1)`
                         }
-                        return `${colours[ctx.datasetIndex]}, 1)`
+                        if (untrack(getCmpModeG)) {
+                            return `${colours[ctx.datasetIndex]}, ${filter(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 1 : 0})`;
+                        } else {
+                            return `${colours[ctx.datasetIndex]}, ${filter(cellData.cells[ctx.dataset.label][ctx.dataIndex][0]) ? 0 : 1})`;
+                        }
                     }
                 }
             },
@@ -125,7 +125,7 @@ render(() => {
             <input type="number" step="0.1" min="0" max="10" onInput={e => {setCutoff(parseFloat(e.currentTarget.value))}}></input>
         </p>
         <p>select mode:&nbsp;
-            <select onInput={e => {setCmpModeG(e.currentTarget.value == "g")}}>
+            <select onInput={e => {setCmpModeG(e.currentTarget.value === "g")}}>
                 <option value="g">greater than</option>
                 <option value="l">lesser or equal than</option>
             </select>
@@ -136,7 +136,7 @@ render(() => {
             <p><button onClick={() => setSendGene(getDispGene())}>subset</button></p>
         </Show>
         <p><button onClick={() => {
-            filter.reset();
+            filter = null;
             setDispGene(null)
             setCutoff(null)
             chart.update();
