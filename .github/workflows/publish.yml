@@ -12,8 +12,8 @@ jobs:
       contents: 'write'
     steps:
       - uses: 'actions/checkout@v3'
-      - run: 'git config user.email "$(git log --pretty=format:%ce)"'
-      - run: 'git config user.name "$(git log --pretty=format:%cn)"'
+      - run: 'git config user.email "$(git log -1 --pretty=format:%ce)"'
+      - run: 'git config user.name "$(git log -1 --pretty=format:%cn)"'
       - run: 'git subtree add --prefix dist origin gh-pages'
         continue-on-error: true
       - uses: 'pnpm/action-setup@v2'
