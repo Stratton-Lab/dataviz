@@ -1,13 +1,15 @@
-/// <reference types="node" />
 import { readFileSync } from "node:fs";
 import { it, expect } from "vitest";
 import { mkBinarySearchFilter, type Filter } from "../src/subset";
 import datasets from "../src/datasets.json";
 
-const mkSimpleFilter = (geneData: [string, number][], cutoff: number): Filter => {
+const mkSimpleFilter = (geneData: [string, number][], geneName: string, cutoff: number): Filter => {
     const maxIdx = geneData.length - 1;
-    if (geneData[geneData.length - 1][1] <= cutoff) {
-        return _ => false;
+    if (geneData[maxIdx][1] <= cutoff) {
+        const filter = _ => false;
+        filter.gene = geneName;
+        filter.cutoff = cutoff;
+        return filter;
     }
     const geneSet = new Set();
     for (let i = 0; i < maxIdx; i += 1) {
@@ -15,7 +17,10 @@ const mkSimpleFilter = (geneData: [string, number][], cutoff: number): Filter =>
             geneSet.add(geneData[i][0]);
         }
     }
-    return barcode => geneSet.has(barcode);
+    const filter = barcode => geneSet.has(barcode);
+    filter.gene = geneName;
+    filter.cutoff = cutoff;
+    return filter;
 }
 
 for (const dataset of datasets) {
@@ -25,9 +30,9 @@ for (const dataset of datasets) {
     it.each(genes)(`binary search filter correctness, using gene %s, dataset ${dataset}`, gene => {
 
         const cutoff = Math.random() * 10;
-        const geneData = JSON.parse(readFileSync(`public/data/pediatric_2yo/gene/${gene}.json`).toString());
-        const filter_s = mkSimpleFilter(geneData, cutoff);
-        const filter_b = mkBinarySearchFilter(geneData, cutoff);
+        const geneData = JSON.parse(readFileSync(`public/data/${dataset}/gene/${gene}.json`).toString());
+        const filter_s = mkSimpleFilter(geneData, gene, cutoff);
+        const filter_b = mkBinarySearchFilter(geneData, gene, cutoff);
 
         expect(barcodes.filter(e => filter_b(e))).toEqual(barcodes.filter(e => filter_s(e)));
     });

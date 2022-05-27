@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { readFileSync, readdirSync } from "node:fs";
 import { it, expect } from "vitest";
 import datasets from "../src/datasets.json";
