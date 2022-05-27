@@ -4,7 +4,7 @@ this project is currently unnamed, but contains code for a data visualisation pr
 
 ## DISCLAIMER
 
-this project is currently in the very early stages and highly unfinished, many features are not implemented and there has been little effort to ensure good code quality.
+this project is currently in the very early stages and highly unfinished, many features are not implemented and there has been little effort to ensure good code quality and documentation.
 
 ## contributing
 
@@ -33,16 +33,21 @@ this project uses [vite](https://vitejs.dev/) as its build/development tool.
 
 the following scripts are configured in the directory:
 
-- ### `pnpm run dev`
+- `pnpm run dev`
 
   runs the app in development mode, serving it to [http://localhost:3000](http://localhost:3000).
   any edits will cause a reload.
 
-- ### `pnpm run serve`
+- `pnpm run serve`
 
   runs the app in production mode, serving it to [http://localhost:3000](http://localhost:3000).
   any edits will cause a reload.
 
-- ### `pnpm run build`
+- `pnpm run build`
 
   builds the app for production, and the resulting build is stored in `dist` folder.
+
+- `pnpm run test`
+
+  runs tests.
+  
