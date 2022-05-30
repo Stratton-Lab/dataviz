@@ -40,12 +40,12 @@ the following scripts are configured in the directory:
 
 - `pnpm run serve`
 
-  runs the app in production mode, serving it to [http://localhost:3000](http://localhost:3000).
-  any edits will cause a reload.
+  serves the contents of the `dist` folder to [http://localhost:4173](http://localhost:4173).
+  edits will not cause a reload.
 
 - `pnpm run build`
 
-  builds the app for production, and the resulting build is stored in `dist` folder.
+  builds the app for production, and the resulting build is stored in the `dist` subdirectory.
 
 - `pnpm run test`
 
