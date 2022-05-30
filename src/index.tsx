@@ -2,6 +2,7 @@
 import { mkBinarySearchFilter, type Filter } from './subset'
 import datasets from "./datasets.json"
 import "./index.css"
+import Header from "./header"
 import { render } from "solid-js/web"
 import {
     createSignal,
@@ -114,8 +115,9 @@ render(() => {
     })
 
     return (<>
-        <div id="center-buttons">
-            select a dataset:&nbsp
+        <Header />
+        <div id="center-buttons" class="text-center">
+            <div class="py-0.5">select a dataset:&nbsp
             <select onInput={e => {
                     setDataSetName(e.currentTarget.value)
                     reset()
@@ -123,26 +125,29 @@ render(() => {
                 <For each={datasets}>
                     {(item: string) => <option value={item}>{item}</option>}
                 </For>
-            </select>
-            <br></br>
-            {
+            </select></div>
+            <div class="py-0.5">{
                 getDispGene() !== null && getCutoff() !== null ?
-                <button onClick={() => {batch(() => {
+                <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 py-1 rounded" onClick={() => {batch(() => {
                         setSendGene(getDispGene())
                         refetchGeneData() // force update of geneData even when sendGene is unchanged
                     })}}>
                     display only cells with expression of {getDispGene()} {getCmpModeG() ? "above" : "less or equal to"} {getCutoff()}
                 </button> :
                 "please input gene and cutoff"
-            }
-            <br></br>
-            <button onClick={reset}>reset</button>
+            }</div>
+            <div class="py-0.5"><button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 py-1 shadow rounded" onClick={reset}>reset</button></div>
+
         </div>
         <br></br>
-        <div id="constraint-chart-flex">
-            <div id="multi-constaint-flex">
+        <div style="display: flex">
+            <div style="display: flex; flex-direction: column; float: left">
+                <p class="w-30 py-0.5">you can use the dropdown below to select a gene and expression level</p>
+                <p class="w-30 py-0.5">once selected, you will be able to display only the cells that match the selected criteria</p>
+                <p class="w-30 py-0.5">note: subsetting will only occur once you press the button in question</p>
+                <div class="py-1"></div>
                 <div id="constraint-select-box">
-                    <div>select a feature:&nbsp
+                    <div class="py-0.5">select a feature:&nbsp
                         {
                             getCellData.loading ?
                             "loading cell data..." :
@@ -154,10 +159,10 @@ render(() => {
                             </select>
                         }
                     </div>
-                    <div>select a cutoff:&nbsp
-                        <input size="3" class="toReset" type="number" step="0.1" min="0" max="10" onInput={e => {setCutoff(parseFloat(e.currentTarget.value))}}></input>
+                    <div class="py-0.5">select a cutoff:&nbsp
+                        <input size="3" class="shadow border px-1 text-gray-700 leading-tight focus:outline-none focus:shadow-outline toReset" type="number" step="0.1" min="0" max="10" onInput={e => {setCutoff(parseFloat(e.currentTarget.value))}}></input>
                     </div>
-                    <div>select mode:&nbsp
+                    <div class="py-0.5">select mode:&nbsp
                         <select onInput={e => {setCmpModeG(e.currentTarget.value === "g")}}>
                             <option value="g">greater than</option>
                             <option value="l">lesser or equal than</option>
@@ -165,7 +170,7 @@ render(() => {
                     </div>
                 </div>
             </div>
-            <div id="chart-div"><canvas id="chart"></canvas></div>
+            <div id="chart-div" style="height: 80vh; width: 80vw"><canvas id="chart"></canvas></div>
         </div>
     </>)
 
