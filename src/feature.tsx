@@ -90,7 +90,7 @@ export default () => {
         <div class="text-s tooltip">(?)
             <span class="tooltip-text">
             creates a feature map of expression for a selected gene, with darkest being high levels of expression,
-            lightest being low levels of expression (units of expression are arbitrary log normalized values)
+            lightest being low levels of expression (units of expression are log normalized values)
             </span>
         </div>
         <br></br> <br></br>
