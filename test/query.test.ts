@@ -18,7 +18,9 @@ for (const dataset of datasets) {
         query += `& (${cells.genes[indices[5]]} = 0 | 0 = ${cells.genes[indices[6]]}))`
         let ctx = {}
         for (const j of indices) {
-            ctx[cells.genes[j]] = JSON.parse(readFileSync(`public/data/${dataset}/gene/${cells.genes[j].toLowerCase()}.json`).toString()).levels
+            if (typeof ctx[cells.genes[j]] === "undefined") {
+                ctx[cells.genes[j]] = JSON.parse(readFileSync(`public/data/${dataset}/gene/${cells.genes[j].toLowerCase()}.json`).toString()).levels
+            }
         }
         const filter = mkFilterBuilder(query)[0](ctx)
         const q_filtered = barcodes.filter(filter)
