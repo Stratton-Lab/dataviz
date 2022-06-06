@@ -9,15 +9,9 @@ this project is currently in the very early stages and highly unfinished, many f
 ## contributing
 
 if you wish to add your dataset to this project, please make a PR and add the corresponding files to the `public` directory.
-please remember to also edit `src/datasets.json` with the name of your new dataset.
 
 ## planned feature list
 
-- allow for multiple conditions to be expressed
-- differentiate points after subsetting by expression levels
-  - further opacity modification ?
-  - 3 dimensional plot ?
-  - create a second plot ?
 - search box for genes
 - styling/design
 - add annotations for some genes to reference known related research
