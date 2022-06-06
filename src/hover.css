@@ -1,0 +1,16 @@
+.tooltip {
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 80vw;
+    background-color: darkblue;
+    color: #fff;
+    position: absolute;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+}
