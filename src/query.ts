@@ -1,8 +1,9 @@
-type Op = 0 | 1
+type Op = 1 | 2 | 3
 type Cmp = 0 | 1 | 2
-const AND_OP: Op = 0
+const LEFT_PAREN = 0
+const NOT_OP: Op = 3
+const AND_OP: Op = 2
 const OR_OP: Op = 1
-const LEFT_PAREN = 2
 const LT: Cmp = 0
 const EQ: Cmp = 1
 const GT: Cmp = 2
@@ -22,14 +23,17 @@ export const mkFilterBuilder = (query: string): [((ctx) => (barcode: string) => 
     const q_len = query.length
     while (i < q_len) {
         const c = query[i]
-        if (c === "&") {
-            while (op_stack.length > 0 && op_stack[op_stack.length - 1] !== LEFT_PAREN) {
+        if (c === "!") {
+            op_stack.push(NOT_OP)
+            i += 1
+        } else if (c === "&") {
+            while (op_stack.length > 0 && op_stack[op_stack.length-1] >= AND_OP) {
                 tokens.push(op_stack.pop() as Op)
             }
             op_stack.push(AND_OP)
             i += 1
         } else if (c === "|") {
-            while (op_stack.length > 0 && op_stack[op_stack.length - 1] !== LEFT_PAREN) {
+            while (op_stack.length > 0 && op_stack[op_stack.length - 1] >= OR_OP) {
                 tokens.push(op_stack.pop() as Op)
             }
             op_stack.push(OR_OP)
@@ -40,19 +44,18 @@ export const mkFilterBuilder = (query: string): [((ctx) => (barcode: string) => 
         } else if (c === ")") {
             while (op_stack[op_stack.length - 1] !== LEFT_PAREN) {
                 if (op_stack.length === 0) {
-                    throw new Error(`could not parse expression: ${query} (incorrect parenthesization)`)
+                    throw new Error(`could not parse expression: ${query} (extra closing parenthesis)`)
                 }
                 tokens.push(op_stack.pop() as Op)
             }
-            if (op_stack.length === 0) {
-                throw new Error(`could not parse expression: ${query} (incorrect parenthesization)`)
+            if (op_stack.pop() !== LEFT_PAREN) {
+                throw new Error(`could not parse expression: ${query} (extra closing parenthesis)`)
             }
-            op_stack.pop()
             i += 1
         } else if (c !== " ") {
             let expr = c
             i += 1
-            while (i < query.length && query[i] !== "&" && query[i] !== "|" && query[i] !== "(" && query[i] !== ")") {
+            while (i < query.length && query[i] !== "&" && query[i] !== "|" && query[i] !== "(" && query[i] !== ")" && query[i] !== "!") {
                 if (query[i] !== " ") {
                     expr += query[i]
                 }
@@ -106,15 +109,24 @@ export const mkFilterBuilder = (query: string): [((ctx) => (barcode: string) => 
     while (op_stack.length > 0) {
         const op = op_stack.pop()
         if (op === LEFT_PAREN) {
-            throw new Error(`could not parse expression: ${query} (incorrect parenthesization)`)
+            throw new Error(`could not parse expression: ${query} (unclosed opening parenthesis)`)
         }
         tokens.push(op as Op)
     }
 
-    // interpret RPN token stack, return final value
+    // interpret RPN token stack
     const fn_stack: ((ctx) => (barcode: string) => boolean)[] = [];
     for (const token of tokens) {
-        if (token === AND_OP) {
+        if (token === NOT_OP) {
+            if (fn_stack.length < 1) {
+                throw new Error(`could not parse expression: ${query} (not operator supplied with insufficient operands)`)
+            }
+            const inv = fn_stack.pop()
+            fn_stack.push(ctx => {
+                const f_inv = inv(ctx)
+                return barcode => !f_inv(barcode)
+            })
+        } else if (token === AND_OP) {
             if (fn_stack.length < 2) {
                 throw new Error(`could not parse expression: ${query} (and operator supplied with insufficient operands)`)
             }
