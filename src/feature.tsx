@@ -1,5 +1,5 @@
-import datasets from "./datasets.json"
-import "./hover.css"
+import datasets from "./assets/datasets.json"
+import { FeatureToolTip } from "./tooltip"
 import { fetchGeneData, fetchCellData } from './cache'
 import {
     createSignal,
@@ -86,15 +86,9 @@ export default () => {
     })
 
     return <div>
-        <div class="text-3xl float-left ">Feature Map</div>
-        <div class="text-s tooltip">(?)
-            <span class="tooltip-text">
-            creates a feature map of expression for a selected gene, with darkest being high levels of expression,
-            lightest being low levels of expression (units of expression are log normalized values)
-            </span>
-        </div>
+        <div class="text-3xl float-left ">Feature Map</div> <FeatureToolTip />
         <br></br> <br></br>
-        {"select a dataset: "}
+        <span>select a dataset: </span>
         <select onInput={e => {
                 reset()
                 setDataSetName(e.currentTarget.value)
@@ -103,8 +97,7 @@ export default () => {
                 {(item: string) => <option value={item}>{item}</option>}
             </For>
         </select>
-        {" "}
-        {"select a feature: "}
+        <span>select a feature: </span>
         {
             getCellData.loading ?
             "loading cell data..." :
@@ -115,8 +108,8 @@ export default () => {
                 </For>
             </select>
         }
-        {" "}
-        <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 shadow" onClick={reset}>reset</button>
+        <span> </span>
+        <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2" onClick={reset}>reset</button>
         <br></br>
         <div id="feature-chart-div"><canvas id="feature-chart"></canvas></div>
     </div>

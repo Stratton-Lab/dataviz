@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs"
 import { it, expect } from "vitest"
-import datasets from "../src/datasets.json"
+import datasets from "../src/assets/datasets.json"
 
 it("accuracy of datasets.json", () => {
     expect(datasets.sort()).toEqual(readdirSync("public/data").sort())

@@ -1,5 +1,5 @@
 /* @refresh reload */
-
+import "./css/index.css"
 import Header from "./header"
 import { render } from "solid-js/web"
 import SubsetMap from "./subset"

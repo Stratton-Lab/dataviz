@@ -1,6 +1,6 @@
 import { it, expect } from "vitest"
 import { readFileSync, statSync } from "node:fs"
-import datasets from "../src/datasets.json"
+import datasets from "../src/assets/datasets.json"
 import { mkFilterBuilder } from "../src/query"
 
 const tests_per_dataset = 5

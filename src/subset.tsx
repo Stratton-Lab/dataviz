@@ -1,5 +1,5 @@
-import datasets from "./datasets.json"
-import "./hover.css"
+import datasets from "./assets/datasets.json"
+import { SubsetToolTip } from "./tooltip"
 import { mkFilterBuilder } from "./query"
 import { fetchGeneData, fetchCellData } from './cache'
 import {
@@ -9,6 +9,7 @@ import {
     createResource,
     createEffect,
     on,
+    untrack
 } from "solid-js"
 
 
@@ -30,8 +31,14 @@ export default () => {
 
     const [getDataSetName, setDataSetName] = createSignal(datasets[0])
     const [getGenes, setGenes] = createSignal(null)
-    const [getQuery, setQuery] = createSignal(null)
+    const [getQuery, setQuery] = createSignal(null, {equals: false})
     const [getErrorMsg, setErrorMsg] = createSignal("")
+    const [getShowAdvanced, setShowAdvanced] = createSignal(false)
+    const [getMin, setMin] = createSignal(0)
+    const [getMax, setMax] = createSignal(null)
+    const [getMaxInclusive, setMaxInclusive] = createSignal(false)
+    const [getMinInclusive, setMinInclusive] = createSignal(false)
+    const [getDispGene, setDispGene] = createSignal(null)
 
     const [getCellData] = createResource(getDataSetName, fetchCellData)
     const [getGeneData] = createResource(getGenes, async genes => await Promise.all(genes.map(gene => fetchGeneData(getDataSetName(), gene, () => setErrorMsg(`requested gene ${gene} could not be found`)))))
@@ -116,49 +123,104 @@ export default () => {
     })
 
     return <div>
-        <div class="text-3xl float-left ">Subset Tool</div>
-        <div class="text-s tooltip">(?)
-            <span class="tooltip-text">
-                <p>subsets datasets via queries about gene expression levels (units of expression are log normalized values).</p>
-                <p>express queries about gene expression by writing a comparison between the gene name and some numeric value, using &lt;, =, or &gt;.</p>
-                <p>multiple different conditions can be joined by conjunction (both conditions are true) or disjunction (one of the conditions must be true)
-                conditions using the &amp;, |and ! operators, respectively.</p>
-                <p>a condition can be negated using the ! operator.</p>
-                <p>note: ! has higher precendence than &amp; which has higher precedence than | and both &amp; and | are left associative</p>
-                <br></br>
-                examples:
-                <ul class="list-disc list-inside">
-                    <li> <pre class="inline">FTL &lt; 4.2</pre> : only shows a cell if it has expression of FTL strictly below 4.2</li>
-                    <li> <pre class="inline">FTL = 0</pre> : only shows a cell if it has expression of FTL equal to zero, i.e. no expression</li>
-                    <li> <pre class="inline">FTL &gt; 4.2</pre> : only shows a cell if it has expression of FTL strictly above 4.2</li>
-                    <li> <pre class="inline">4.2 &lt; FTL</pre> : equivalent to previous</li>
-                    <li> <pre class="inline">1.6 &lt; FTL &amp; FTL &lt; 4.2</pre> : only shows a cell if it has expression of FTL strictly strictly between 1.6 and 4.2</li>
-                    <li> <pre class="inline">APOE &lt; 4 | 2 &lt; RHOB &amp; FTL = 0</pre> : only shows a cell if it has no expression of FTL and expression of RHOB above 2 or if the cell has expression of APOE below 4 (&amp; is evaluated before |)</li>
-                    <li> <pre class="inline">(APOE &lt; 4 | 2 &lt; RHOB) &amp; FTL = 0</pre> : only shows a cell if it has has expression of APOE below 4 or expression of RHOB above 2 while also having no FTL expression</li>
-                    <li> <pre class="inline">! APOE &lt; 4 &amp; FTL &lt; 2</pre> : only shows a cell if it does not have expression of APOE below 4 while also having expression of FTL below 2 (! is evaluated before &)</li>
-                    <li> <pre class="inline">! (APOE &lt; 4 &amp; FTL &lt; 2)</pre> : only shows a cell if it does not have both expression of APOE below 4 and expression of FTL below 2</li>
-                </ul>
-            </span>
-        </div>
+        <h2 class="text-3xl float-left">Subset Tool</h2>
         <br></br> <br></br>
-        <div>
-            {"select a dataset: "}
-            <select onInput={e => {
-                    reset(false)
-                    setDataSetName(e.currentTarget.value)
-                }}>
-                <For each={datasets}>
+        <span>select a dataset: </span>
+        <select onInput={e => {
+            reset(false)
+            setDataSetName(e.currentTarget.value)
+        }}>
+            <For each={datasets}>
+                {(item: string) => <option value={item}>{item}</option>}
+            </For>
+        </select>
+        <span> </span>
+        <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2" onClick={() => reset(false)}>reset</button>
+        <span> </span>
+        {
+            getMax() !== null && getDispGene() !== null ?
+            <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2" onClick={() => {
+                const max = untrack(getMax)
+                const min = untrack(getMin)
+                const max_inc = untrack(getMaxInclusive)
+                const min_inc = untrack(getMinInclusive)
+                const gene = untrack(getDispGene)
+                if (max_inc) {
+                    if (min_inc) {
+                        filter_builder = ctx => {
+                            const geneExprMap = ctx[gene]
+                            return barcode => {
+                                const level = (geneExprMap[barcode] || 0)
+                                return min <= level && level <= max
+                            }
+                        }
+                    } else {
+                        filter_builder = ctx => {
+                            const geneExprMap = ctx[gene]
+                            return barcode => {
+                                const level = (geneExprMap[barcode] || 0)
+                                return min < level && level <= max
+                            }
+                        }
+                    }
+                } else {
+                    if (min_inc) {
+                        filter_builder = ctx => {
+                            const geneExprMap = ctx[gene]
+                            return barcode => {
+                                const level = (geneExprMap[barcode] || 0)
+                                return min <= level && level < max
+                            }
+                        }
+                    } else {
+                        filter_builder = ctx => {
+                            const geneExprMap = ctx[gene]
+                            return barcode => {
+                                const level = (geneExprMap[barcode] || 0)
+                                return min < level && level < max
+                            }
+                        }
+                    }
+                }
+
+                setGenes([gene])
+            }}>show only cells with expression of {getDispGene()} between {getMin()} ({getMinInclusive() ? "inclusive" : "exclusive"}) and {getMax()} ({getMaxInclusive() ? "inclusive" : "exclusive"})</button> :
+            "please select a maximum expression level and a gene"
+        }
+        <br></br>
+        <span>select a minimum: </span>
+        <input class="shadow border px-1 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" step="0.1" min="0" max="10" value="0" onInput={e => setMin(parseFloat(e.currentTarget.value))}></input>
+        <span> check box to make minimum inclusive: </span> <input type="checkbox" onClick={() => setMinInclusive((prev) => !prev)}></input>
+        <br></br>
+        <span>select a maximum: </span>
+        <input class="shadow border px-1 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" step="0.1" min="0" max="10" value="" onInput={e => setMax(parseFloat(e.currentTarget.value))}></input>
+        <span> check box to make maximum inclusive: </span> <input type="checkbox" onClick={() => setMaxInclusive((prev) => !prev)}></input>
+        <br></br>
+        <span>select a feature: </span>
+        {
+            getCellData.loading ?
+            "loading cell data..." :
+            <select value="" class="px-2 to-reset-feature" onInput={e => {setDispGene(e.currentTarget.value)}}>
+                <option selected hidden disabled value=""></option>
+                <For each={getCellData().genes} fallback={<>loading button ...</>}>
                     {(item: string) => <option value={item}>{item}</option>}
                 </For>
             </select>
-            {" "}
-            <input style="width:25vw" class="border" id="subset-query-input-field"></input>
-            {" "}
-            <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 border" onClick={() => setQuery((document.getElementById("subset-query-input-field") as HTMLInputElement).value)}>run query</button>
-            {" "}
-            <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2" onClick={() => reset(true)}>reset</button>
-            {" "}
-            <div class="inline text-red-600">{getErrorMsg()}</div>
+        }
+
+        <br></br>
+        <button onClick={() => setShowAdvanced((prev) => !prev) }>{getShowAdvanced() ? "\u2bc6" : "\u2bc8"}</button> <span>click arrow for advanced query <SubsetToolTip /></span>
+        <div style={getShowAdvanced() ? "display: block" : "display: none"}>
+            <div>
+                {" "}
+                <input style="width:25vw" class="border" id="subset-query-input-field"></input>
+                {" "}
+                <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 border" onClick={() => setQuery((document.getElementById("subset-query-input-field") as HTMLInputElement).value)}>run query</button>
+                {" "}
+                <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 border" onClick={() => reset(true)}>reset</button>
+                {" "}
+                <div class="inline text-red-600">{getErrorMsg()}</div>
+            </div>
         </div>
         <br></br>
         <div id="subset-chart-div"><canvas id="subset-chart"></canvas></div>
